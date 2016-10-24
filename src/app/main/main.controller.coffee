@@ -8,7 +8,7 @@ angular.module 'iventureFront'
       link: fn_link
     }
     return
-  .controller 'AdminController', ($state) ->
+  .controller 'AdminController', ($state, LoopBackAuth) ->
     'ngInject'
     vm = this
     
@@ -17,8 +17,17 @@ angular.module 'iventureFront'
       {id: 'Track', name: 'Tracks'},
       {id: 'Guest', name: 'Invitados'}
     ]
+
+    logout = (e) ->
+      e.preventDefault()
+      LoopBackAuth.clearUser()
+      LoopBackAuth.clearStorage()
+      $state.go 'login'
+      return
+
+    vm.logout = logout
     return
-  .controller 'CategoryController', ($state, toastr, $stateParams, Course, Track, Guest) ->
+  .controller 'CategoryController', ($state, toastr, $stateParams, Course, Track, Guest, $uibModal) ->
     'ngInject'
     vm = this
 
@@ -31,20 +40,42 @@ angular.module 'iventureFront'
       .then (items) ->
         vm.resources = items
       .catch ->
-          toastr.error 'Error', 'No se pudo borrar el elemento'
+        toastr.error 'Error', 'No se pudo borrar el elemento'
 
     vm.delete = (event, id) ->
       event.preventDefault()
-      Get.deleteById({id: id})
-        .$promise
-        .then ->
-          toastr.success 'Elemento eliminado'
-          Get.find()
+
+      modal = $uibModal.open({
+        animation: true
+        template: """
+<div>
+  <div class="modal-header">
+    <h3 class="modal-title">Eliminar</h3>
+  </div>
+  <div class="modal-body">
+    <p>¿Deseas eliminar el elemento?</p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" type="button" ng-click="$close(true)">Eliminar</button>
+    <button class="btn btn-default" type="button" ng-click="$close(false)">Cancelar</button>
+  </div>
+</div>
+"""
+
+        size: 'md'
+      })
+      modal.result.then (result) ->
+        if result
+          Get.deleteById({id: id})
             .$promise
-            .then (response) ->
-              vm.resources = response
-        .catch ->
-          toastr.error 'Error', 'No se pudo borrar el elemento'
+            .then ->
+              toastr.success 'Elemento eliminado'
+              Get.find()
+                .$promise
+                .then (response) ->
+                  vm.resources = response
+            .catch ->
+              toastr.error 'Error', 'No se pudo borrar el elemento'
   
     return
 
