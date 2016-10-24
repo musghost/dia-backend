@@ -19,3 +19,5 @@ angular.module 'iventureFront'
           $location.nextAfterLogin = $location.path()
           $location.path '/login'
         $q.reject(rejection)
+
+        
